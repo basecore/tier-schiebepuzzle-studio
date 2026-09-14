@@ -1,0 +1,1 @@
+window.Store={all:()=>JSON.parse(localStorage.getItem('tier-puzzle-studio')||'[]'),put:(name,state)=>{let a=Store.all().filter(x=>x.name!==name);a.push({name,state});localStorage.setItem('tier-puzzle-studio',JSON.stringify(a))},del:name=>localStorage.setItem('tier-puzzle-studio',JSON.stringify(Store.all().filter(x=>x.name!==name)))};
