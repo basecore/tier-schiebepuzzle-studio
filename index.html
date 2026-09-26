@@ -20,17 +20,13 @@
         <button class="tab" data-page="import">📷 Foto importieren</button>
       </nav>
     </header>
+
     <main>
       <section class="page active" id="play">
         <div class="page-grid">
           <section class="card board-card">
             <div class="wood-frame"><div class="puzzle-board" id="game"></div></div>
-            <div class="button-row">
-              <button id="random" class="button accent">🎲 Neues Rätsel</button>
-              <button id="undo" class="button secondary">↩ Zurück</button>
-              <button id="hint" class="button secondary">💡 Tipp</button>
-              <button id="toSolver" class="button primary">🤖 Lösungsweg</button>
-            </div>
+            <div class="button-row"><button id="random" class="button accent">🎲 Neues Rätsel</button><button id="undo" class="button secondary">↩ Zurück</button><button id="hint" class="button secondary">💡 Tipp</button><button id="toSolver" class="button primary">🤖 Lösungsweg</button></div>
           </section>
           <section class="card panel-card">
             <h2>Spielmodus</h2><p class="intro">Tippe auf eine orange markierte Kachel.</p>
@@ -38,37 +34,39 @@
             <select id="level" class="select"><option value="3,6">🌱 Leicht – 3 bis 6 Züge</option><option value="7,12" selected>⚡ Mittel – 7 bis 12 Züge</option><option value="13,24">🔥 Schwer – 13 bis 24 Züge</option></select>
             <div class="metrics"><div class="metric"><b id="moves">0</b><span>Züge</span></div><div class="metric"><b id="par">0</b><span>Par</span></div><div class="metric"><b id="delta">0</b><span>Differenz</span></div><div class="metric"><b id="time">00:00</b><span>Zeit</span></div></div>
             <div id="notice" class="notice info"></div>
-            <h3>Varianten-Code</h3><div class="input-row"><input id="code" readonly><button id="copy" class="button secondary">📋 Kopieren</button></div>
+            <h3>Varianten-Code</h3><div class="input-row"><input id="code" readonly><button id="copy" class="button secondary">📋 Kopieren</button></div><p class="small">Die drei Spalten dürfen vertauscht sein.</p>
           </section>
         </div>
       </section>
+
       <section class="page" id="solver"><div class="page-grid"><section class="card board-card"><div class="wood-frame"><div class="puzzle-board" id="solveBoard"></div></div><div class="button-row"><button id="first" class="button secondary">⏮ Start</button><button id="back" class="button secondary">◀ Zurück</button><button id="next" class="button primary">Weiter ▶</button></div></section><section class="card panel-card"><h2>Automatischer Löser</h2><div id="solveStatus" class="notice info">Bereit zur Analyse.</div><ol id="steps" class="steps"></ol><button id="solve" class="button accent full">Optimale Lösung berechnen</button></section></div></section>
-      <section class="page" id="editor"><div class="page-grid"><section class="card board-card"><div class="wood-frame"><div class="puzzle-board" id="edit"></div></div><div class="button-row"><button id="photoStart" class="button secondary">📷 Foto-Start</button><button id="clear" class="button danger">🧹 Leeren</button><button id="playEdited" class="button primary">🎮 Spielen</button></div></section><section class="card panel-card"><h2>Eigene Variante</h2><p class="intro">Ein Teil auswählen und dann ein Feld antippen.</p><div id="palette" class="palette"></div><div id="valid" class="notice warn"></div><h3>Code laden</h3><div class="input-row"><input id="codeLoad" placeholder="T1,T6,T4,T2,T7,T5,T3,T8,."><button id="load" class="button primary">Laden</button></div></section></div></section>
+
+      <section class="page" id="editor"><div class="page-grid"><section class="card board-card"><div class="wood-frame"><div class="puzzle-board" id="edit"></div></div><div class="button-row"><button id="photoStart" class="button secondary">📷 Foto-Start</button><button id="clear" class="button danger">🧹 Leeren</button><button id="playEdited" class="button primary">🎮 Spielen</button></div></section><section class="card panel-card"><h2>Eigene Variante</h2><p class="intro">Ein Teil auswählen und dann ein Feld antippen.</p><div id="palette" class="palette"></div><div id="valid" class="notice warn"></div><h3>Code laden</h3><div class="input-row"><input id="codeLoad" placeholder="T1,T6,T4,T2,T7,T5,T3,T8,."><button id="load" class="button primary">Laden</button></div><h3>Varianten speichern</h3><div class="input-row"><input id="saveName" placeholder="Name der Variante"><button id="save" class="button secondary">Speichern</button></div><div class="input-row"><select id="saved" class="select"></select><button id="loadSaved" class="button secondary">Öffnen</button><button id="delete" class="button danger">Löschen</button></div></section></div></section>
+
       <section class="page" id="import">
         <section class="card import-card">
           <h2>📷 Foto importieren</h2>
           <p class="intro">Die Verarbeitung passiert lokal. Lege das gelbe 3×3-Raster exakt über den Puzzlebereich.</p>
           <div class="button-row"><label class="button primary file-button">🖼 Bild auswählen<input id="imageInput" type="file" accept="image/*" hidden></label><label class="button accent file-button">📸 Kamera<input id="cameraInput" type="file" accept="image/*" capture="environment" hidden></label><button id="resetCrop" class="button secondary">↺ Raster</button></div>
           <div id="cropWorkspace" class="crop-workspace hidden"><div id="cropHelp" class="notice info">Mitte ziehen zum Verschieben. Eckgriffe zum Skalieren.</div><div id="cropStage" class="crop-stage"><img id="sourceImage" alt="Importiertes Foto"><div id="cropOverlay" class="crop-overlay"><div class="crop-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="handle nw" data-handle="nw"></span><span class="handle ne" data-handle="ne"></span><span class="handle sw" data-handle="sw"></span><span class="handle se" data-handle="se"></span></div></div><p id="cropDetails" class="small"></p><div class="button-row"><button id="cutTiles" class="button accent">✂️ 9 Teile ausschneiden</button></div></div>
+
           <div id="importResults" class="import-results hidden">
-            <h3>Kacheln zuordnen</h3><p class="small">Wähle eine Rolle. Wird eine bereits verwendete Rolle gewählt, tauschen die beiden Kacheln automatisch ihre Rollen.</p>
+            <h3>Kacheln zuordnen</h3>
+            <p class="small">Wähle eine Rolle. Bereits vergebene Rollen werden automatisch mit der bisherigen Rolle getauscht.</p>
+            <div class="import-mode"><button id="roleMode" class="button primary active-mode">Rollen wählen</button><button id="sortMode" class="button secondary">Gelöst sortieren</button></div>
+            <div id="roleHelp" class="notice info">Wähle für jede Kachel die passende Rolle aus. Ein Wechsel tauscht die beiden Rollen automatisch.</div>
+            <div id="sortHelp" class="notice info hidden">Tippe zuerst eine Kachel an und dann eine Position im gelösten 3×3-Raster. Die Rollen werden automatisch vergeben.</div>
             <div id="cutPreview" class="cut-preview"></div>
-            <div class="button-row"><button id="openSort" class="button primary">↕️ Alternativ: gelöst sortieren</button><button id="applyImported" class="button green" disabled>✓ Als Puzzle übernehmen</button><button id="playImported" class="button primary" disabled>🎮 Als Spiel starten</button></div>
+            <div id="sortBoard" class="sort-board hidden"></div>
+            <div class="button-row"><button id="applyImported" class="button green" disabled>✓ Als Puzzle übernehmen</button><button id="playImported" class="button primary" disabled>🎮 Als Spiel starten</button></div>
             <div id="importStatus" class="notice warn"></div>
-          </div>
-          <div id="sortMode" class="sort-mode hidden">
-            <h3>In gelöster Reihenfolge sortieren</h3>
-            <p class="small">Wähle erst eine Kachel unten und dann ihr Zielfeld. Die Rollen werden automatisch aus der Position abgeleitet: Objekt 1/2/3 von oben nach unten, ein Feld bleibt frei.</p>
-            <div id="sortTargets" class="sort-targets"></div>
-            <h4>Verfügbare Kacheln</h4>
-            <div id="sortSource" class="sort-source"></div>
-            <div class="button-row"><button id="finishSort" class="button green">✓ Sortierung übernehmen</button><button id="cancelSort" class="button secondary">Abbrechen</button></div>
           </div>
         </section>
       </section>
     </main>
     <footer class="site-footer"><span>Schiebepuzzle Studio · Version 1.6.0</span><a href="https://github.com/basecore/tier-schiebepuzzle-studio">GitHub</a></footer>
   </div>
+
   <div id="successModal" class="modal hidden"><div class="modal-content"><div class="modal-icon">🎉</div><h2>Geschafft!</h2><p class="modal-stats"><span id="modalMoves">0</span> Züge<br><span id="modalPar">0</span> Par<br><span id="modalTime">00:00</span> Zeit</p><div class="button-row"><button id="modalNew" class="button accent">🎲 Neues Rätsel</button><button id="modalClose" class="button secondary">Schließen</button></div></div></div>
   <script src="puzzle-engine.js"></script><script src="storage.js"></script><script src="image-import.js"></script><script src="app.js"></script>
 </body>
