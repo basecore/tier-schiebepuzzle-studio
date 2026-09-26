@@ -8,12 +8,16 @@
     T4: 'assets/tiles/flamingo-kopf.jpg', T5: 'assets/tiles/flamingo-koerper.jpg', T6: 'assets/tiles/flamingo-beine.jpg',
     T7: 'assets/tiles/koala-kopf.jpg', T8: 'assets/tiles/koala-baum.jpg'
   };
-  const names = { T1:'Teil 1', T2:'Teil 2', T3:'Teil 3', T4:'Teil 4', T5:'Teil 5', T6:'Teil 6', T7:'Teil 7', T8:'Teil 8', '.':'Frei' };
+  const names = {
+    T1: 'Objekt 1 – Oben', T2: 'Objekt 1 – Mitte', T3: 'Objekt 1 – Unten',
+    T4: 'Objekt 2 – Oben', T5: 'Objekt 2 – Mitte', T6: 'Objekt 2 – Unten',
+    T7: 'Objekt 3 – Oben', T8: 'Objekt 3 – Mitte',
+    '.': 'Frei'
+  };
   const photo = ['T1','T6','T4','T2','T7','T5','T3','T8','.'];
   let state = photo.slice(), history = [], solution = [], solutionIndex = 0;
   let selected = 'T1', suggested = null, timer = null, seconds = 0;
   let cropper = null, cut = [], tileRoles = [], customImages = {};
-  let manualFrames = [], manualStageImg = null, manualStageRect = null;
 
   const copy = a => a.slice();
 
@@ -131,7 +135,7 @@
     if (!c.ok) { notice('#solveStatus', c.msg, 'bad'); return; }
     let current = copy(state);
     solution = c.result.path.map(m => { current = copy(m.state); return { ...m, state: copy(current) }; });
-    notice('#solveStatus', `${solution.length} minimale Züge zu einem der 12 Ziele.`, 'ok');
+    notice('#solveStatus', `${solution.length} minimale Züge.`, 'ok');
     solution.forEach((m, i) => {
       const li = document.createElement('li');
       li.textContent = `${i+1}. ${name(m.tile)} ${m.arrow} ${m.word}`;
@@ -175,7 +179,6 @@
       im.onload = () => {
         $('#cropWorkspace').classList.remove('hidden');
         $('#importResults').classList.add('hidden');
-        $('#manualAssign').classList.add('hidden');
         cropper = ImageImport.createImageCropper({ stage: $('#cropStage'), image: im, overlay: $('#cropOverlay'), details: $('#cropDetails') });
         cropper.reset();
       };
@@ -222,7 +225,7 @@
     const ok = tileRoles.length === 9 && Engine.tiles.every(t => tileRoles.filter(x => x === t).length === 1);
     $('#applyImported').disabled = !ok;
     $('#playImported').disabled = !ok;
-    notice('#importStatus', ok ? 'Zuordnung vollständig.' : 'Jede Rolle (T1-T8 und Frei) muss genau einmal gewählt werden.', ok ? 'ok' : 'warn');
+    notice('#importStatus', ok ? 'Zuordnung vollständig.' : 'Jede Rolle (Objekt 1-3 Oben/Mitte/Unten und Frei) muss genau einmal gewählt werden.', ok ? 'ok' : 'warn');
   }
 
   function applyImport(play) {
