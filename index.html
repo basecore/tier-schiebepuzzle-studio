@@ -2,9 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#155a6b">
-  <meta name="description" content="Universelles 3×3-Schiebepuzzle mit Spielmodus, BFS-Löser, Varianten-Editor und lokalem Fotoimport.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%A7%A9%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
@@ -13,10 +12,7 @@
 <body>
   <div class="app-shell">
     <header class="app-header">
-      <div class="brand">
-        <span class="brand-icon">🧩</span>
-        <div><h1>Schiebepuzzle Studio</h1><p>Spielen · Löser · Varianten · Fotoimport</p></div>
-      </div>
+      <div class="brand"><span class="brand-icon">🧩</span><div><h1>Schiebepuzzle Studio</h1><p>Spielen · Löser · Varianten · Fotoimport</p></div></div>
       <nav class="tabbar">
         <button class="tab active" data-page="play">🎮 Spielen</button>
         <button class="tab" data-page="solver">🤖 Löser</button>
@@ -39,7 +35,7 @@
           </section>
           <section class="card panel-card">
             <h2>Spielmodus</h2>
-            <p class="intro">Tippe auf eine orange markierte Kachel. Sie liegt direkt neben dem freien Feld und kann verschoben werden.</p>
+            <p class="intro">Tippe auf eine orange markierte Kachel.</p>
             <label class="field-label" for="level">Schwierigkeitsgrad</label>
             <select id="level" class="select">
               <option value="3,6">🌱 Leicht – 3 bis 6 Züge</option>
@@ -54,11 +50,8 @@
             </div>
             <div id="notice" class="notice info"></div>
             <h3>Varianten-Code</h3>
-            <div class="input-row">
-              <input id="code" readonly>
-              <button id="copy" class="button secondary">📋 Kopieren</button>
-            </div>
-            <p class="small">Die drei Spalten dürfen vertauscht sein. Entscheidend ist nur die korrekte Reihenfolge T1→T3, T4→T6, T7→T8.</p>
+            <div class="input-row"><input id="code" readonly><button id="copy" class="button secondary">📋 Kopieren</button></div>
+            <p class="small">Die drei Spalten dürfen vertauscht sein.</p>
           </section>
         </div>
       </section>
@@ -78,7 +71,6 @@
             <div id="solveStatus" class="notice info">Bereit zur Analyse.</div>
             <ol id="steps" class="steps"></ol>
             <button id="solve" class="button accent full">Optimale Lösung berechnen</button>
-            <p class="small">Der BFS-Löser akzeptiert alle zwölf korrekten Zielzustände.</p>
           </section>
         </div>
       </section>
@@ -95,18 +87,14 @@
           </section>
           <section class="card panel-card">
             <h2>Eigene Variante</h2>
-            <p class="intro">Ein Teil auswählen und dann ein Feld antippen. Bereits platzierte Teile werden getauscht.</p>
+            <p class="intro">Ein Teil auswählen und dann ein Feld antippen.</p>
             <div id="palette" class="palette"></div>
             <div id="valid" class="notice warn"></div>
             <h3>Code laden</h3>
-            <div class="input-row">
-              <input id="codeLoad" placeholder="T1,T6,T4,T2,T7,T5,T3,T8,.">
-              <button id="load" class="button primary">Laden</button>
-            </div>
+            <div class="input-row"><input id="codeLoad" placeholder="T1,T6,T4,T2,T7,T5,T3,T8,."><button id="load" class="button primary">Laden</button></div>
             <h3>Varianten speichern</h3>
             <div class="input-row">
-              <input id="saveName" placeholder="Name der Variante">
-              <button id="save" class="button secondary">Speichern</button>
+              <input id="saveName" placeholder="Name der Variante"><button id="save" class="button secondary">Speichern</button>
             </div>
             <div class="input-row">
               <select id="saved" class="select"></select>
@@ -120,7 +108,7 @@
       <section class="page" id="import">
         <section class="card import-card">
           <h2>📷 Foto importieren</h2>
-          <p class="intro">Die Verarbeitung passiert lokal im Browser. Lege das gelbe 3×3-Raster exakt über den Puzzlebereich.</p>
+          <p class="intro">Die Verarbeitung passiert lokal. Lege das gelbe 3×3-Raster exakt über den Puzzlebereich.</p>
           <div class="button-row">
             <label class="button primary file-button">🖼 Bild auswählen<input id="imageInput" type="file" accept="image/*" hidden></label>
             <label class="button accent file-button">📸 Kamera<input id="cameraInput" type="file" accept="image/*" capture="environment" hidden></label>
@@ -139,27 +127,20 @@
               </div>
             </div>
             <p id="cropDetails" class="small"></p>
-            <div class="button-row">
-              <button id="cutTiles" class="button accent">✂️ 9 Teile ausschneiden</button>
-            </div>
+            <div class="button-row"><button id="cutTiles" class="button accent">✂️ 9 Teile ausschneiden</button></div>
           </div>
 
           <div id="importResults" class="import-results hidden">
-            <h3>Schritt 1: Teile den Positionen zuordnen</h3>
-            <p class="small">Tippe ein Teil an, dann die Zielposition im Raster.</p>
+            <h3>Schritt 1: Teile zuordnen</h3>
+            <p class="small">Tippe ein Teil an, dann die Zielposition.</p>
             <div id="assignPreview" class="assign-preview"></div>
-            <div class="button-row">
-              <button id="startManual" class="button primary">Schritt 2: Manuell anpassen</button>
-            </div>
+            <div class="button-row"><button id="startManual" class="button primary">Schritt 2: Manuell anpassen</button></div>
           </div>
 
           <div id="manualAssign" class="manual-assign hidden">
             <h3>Manuelle Zuordnung</h3>
-            <p class="small">Ziehe jedes Teil an die richtige Position im Foto.</p>
-            <div class="manual-grid">
-              <div id="manualSource" class="manual-source"></div>
-              <div id="manualTarget" class="manual-target"></div>
-            </div>
+            <p class="small">Ziehe jeden der 8 Rahmen an die richtige Position im Foto.</p>
+            <div id="manualStage" class="manual-stage"></div>
             <div class="button-row">
               <button id="finishManual" class="button green">✓ Fertig</button>
               <button id="cancelManual" class="button secondary">Abbrechen</button>
@@ -177,11 +158,25 @@
       </section>
     </main>
 
-    <footer class="site-footer">
-      <span>Schiebepuzzle Studio · Version 1.3.0</span>
-      <a href="https://github.com/basecore/tier-schiebepuzzle-studio">GitHub</a>
-    </footer>
+    <footer class="site-footer"><span>Schiebepuzzle Studio · Version 1.4.0</span><a href="https://github.com/basecore/tier-schiebepuzzle-studio">GitHub</a></footer>
   </div>
+
+  <div id="successModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-icon">🎉</div>
+      <h2>Geschafft!</h2>
+      <p class="modal-stats">
+        <span id="modalMoves">0</span> Züge<br>
+        <span id="modalPar">0</span> Par<br>
+        <span id="modalTime">00:00</span> Zeit
+      </p>
+      <div class="button-row">
+        <button id="modalNew" class="button accent">🎲 Neues Rätsel</button>
+        <button id="modalClose" class="button secondary">Schließen</button>
+      </div>
+    </div>
+  </div>
+
   <script src="puzzle-engine.js"></script>
   <script src="storage.js"></script>
   <script src="image-import.js"></script>

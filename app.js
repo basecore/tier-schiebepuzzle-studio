@@ -3,29 +3,17 @@
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
 
-  // Existierende Bilder verwenden
   const images = {
-    T1: 'assets/tiles/giraffe-kopf.jpg',
-    T2: 'assets/tiles/giraffe-hals.jpg',
-    T3: 'assets/tiles/giraffe-beine.jpg',
-    T4: 'assets/tiles/flamingo-kopf.jpg',
-    T5: 'assets/tiles/flamingo-koerper.jpg',
-    T6: 'assets/tiles/flamingo-beine.jpg',
-    T7: 'assets/tiles/koala-kopf.jpg',
-    T8: 'assets/tiles/koala-baum.jpg'
+    T1: 'assets/tiles/giraffe-kopf.jpg', T2: 'assets/tiles/giraffe-hals.jpg', T3: 'assets/tiles/giraffe-beine.jpg',
+    T4: 'assets/tiles/flamingo-kopf.jpg', T5: 'assets/tiles/flamingo-koerper.jpg', T6: 'assets/tiles/flamingo-beine.jpg',
+    T7: 'assets/tiles/koala-kopf.jpg', T8: 'assets/tiles/koala-baum.jpg'
   };
-
-  const names = {
-    T1: 'Teil 1', T2: 'Teil 2', T3: 'Teil 3',
-    T4: 'Teil 4', T5: 'Teil 5', T6: 'Teil 6',
-    T7: 'Teil 7', T8: 'Teil 8', '.': 'Frei'
-  };
-
-  const photo = ['T1', 'T6', 'T4', 'T2', 'T7', 'T5', 'T3', 'T8', '.'];
+  const names = { T1:'Teil 1', T2:'Teil 2', T3:'Teil 3', T4:'Teil 4', T5:'Teil 5', T6:'Teil 6', T7:'Teil 7', T8:'Teil 8', '.':'Frei' };
+  const photo = ['T1','T6','T4','T2','T7','T5','T3','T8','.'];
   let state = photo.slice(), history = [], solution = [], solutionIndex = 0;
   let selected = 'T1', suggested = null, timer = null, seconds = 0;
   let cropper = null, cut = [], assignments = [], customImages = {};
-  let assignSelected = null, manualFrame = [], manualMode = false;
+  let assignSelected = null, manualFrames = [], manualStageImg = null, manualStageRect = null;
 
   const copy = a => a.slice();
 
@@ -92,9 +80,19 @@
     render();
     if (Engine.isGoal(state)) {
       clearInterval(timer);
-      notice('#notice', `🎉 Geschafft! ${history.length} Züge.`, 'ok');
+      showSuccessModal();
     }
   }
+
+  function showSuccessModal() {
+    $('#modalMoves').textContent = history.length;
+    $('#modalPar').textContent = $('#par').textContent;
+    $('#modalTime').textContent = $('#time').textContent;
+    $('#successModal').classList.remove('hidden');
+  }
+
+  $('#modalNew').onclick = () => { $('#successModal').classList.add('hidden'); randomPuzzle(); };
+  $('#modalClose').onclick = () => { $('#successModal').classList.add('hidden'); };
 
   function check() {
     if (!Engine.valid(state)) return { ok: false, msg: 'Ungültig: Alle acht Teile und ein freies Feld werden benötigt.' };
@@ -188,7 +186,6 @@
     if (!cropper) return;
     cut = cropper.cutIntoNine();
     assignments = ['T1','T6','T4','T2','T7','T5','T3','T8','.'];
-    manualFrame = Array(9).fill(null).map((_, i) => ({ x: i%3, y: Math.floor(i/3), w: 1, h: 1 }));
     renderAssignPreview();
     $('#importResults').classList.remove('hidden');
     $('#manualAssign').classList.add('hidden');
@@ -210,31 +207,87 @@
   $('#startManual').onclick = () => {
     $('#manualAssign').classList.remove('hidden');
     $('#importResults').classList.add('hidden');
-    renderManual();
+    initManualFrames();
   };
 
-  function renderManual() {
-    const src = $('#manualSource'), tgt = $('#manualTarget');
-    src.innerHTML = ''; tgt.innerHTML = '';
-    cut.forEach((d, i) => {
-      const c = document.createElement('div');
-      c.className = 'manual-card' + (assignments[i] === assignSelected ? ' selected' : '');
-      const im = document.createElement('img'); im.src = d;
-      c.append(im);
-      c.onclick = () => { assignSelected = assignments[i]; renderManual(); };
-      src.append(c);
+  function initManualFrames() {
+    const stage = $('#manualStage');
+    stage.innerHTML = '';
+    manualStageImg = document.createElement('img');
+    manualStageImg.src = cut[0];
+    stage.append(manualStageImg);
+    manualStageRect = null;
+
+    const positions = [
+      { x: 0, y: 0, label: 'T1' }, { x: 1, y: 0, label: 'T4' }, { x: 2, y: 0, label: 'T7' },
+      { x: 0, y: 1, label: 'T2' }, { x: 1, y: 1, label: 'T5' }, { x: 2, y: 1, label: 'T8' },
+      { x: 0, y: 2, label: 'T3' }, { x: 1, y: 2, label: 'T6' }
+    ];
+
+    manualFrames = positions.map((pos, idx) => {
+      const f = document.createElement('div');
+      f.className = 'frame';
+      f.style.left = `${pos.x * 33.33}%`;
+      f.style.top = `${pos.y * 33.33}%`;
+      f.style.width = '33.33%';
+      f.style.height = '33.33%';
+      const lbl = document.createElement('span');
+      lbl.className = 'frame-label';
+      lbl.textContent = pos.label;
+      f.append(lbl);
+      stage.append(f);
+      return { el: f, x: pos.x, y: pos.y, w: 1, h: 1, pointer: null, label: pos.label };
     });
-    for (let i = 0; i < 9; i++) {
-      const c = document.createElement('div');
-      c.className = 'manual-card'; c.dataset.pos = i;
-      c.onclick = () => {
-        if (assignSelected) { assignments[i] = assignSelected; assignSelected = null; renderManual(); importStatus(); }
-      };
-      tgt.append(c);
-    }
+
+    manualStageImg.onload = () => { manualStageRect = stage.getBoundingClientRect(); };
+    window.addEventListener('resize', () => { manualStageRect = stage.getBoundingClientRect(); });
+
+    manualFrames.forEach(frame => {
+      frame.el.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        frame.pointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, origX: frame.x, origY: frame.y };
+        frame.el.classList.add('dragging');
+        frame.el.setPointerCapture?.(e.pointerId);
+      });
+      frame.el.addEventListener('pointermove', e => {
+        if (!frame.pointer || e.pointerId !== frame.pointer.id || !manualStageRect) return;
+        const dx = e.clientX - frame.pointer.startX;
+        const dy = e.clientY - frame.pointer.startY;
+        const cellW = manualStageRect.width / 3;
+        const cellH = manualStageRect.height / 3;
+        const newX = Math.round((frame.pointer.origX * cellW + dx) / cellW);
+        const newY = Math.round((frame.pointer.origY * cellH + dy) / cellH);
+        frame.x = Math.max(0, Math.min(2, newX));
+        frame.y = Math.max(0, Math.min(2, newY));
+        frame.el.style.left = `${frame.x * 33.33}%`;
+        frame.el.style.top = `${frame.y * 33.33}%`;
+      });
+      frame.el.addEventListener('pointerup', e => {
+        if (frame.pointer && e.pointerId === frame.pointer.id) {
+          frame.pointer = null;
+          frame.el.classList.remove('dragging');
+        }
+      });
+    });
   }
 
   $('#finishManual').onclick = () => {
+    const mapping = {};
+    manualFrames.forEach(f => { mapping[`${f.x},${f.y}`] = f.label; });
+    const order = ['T1','T4','T7','T2','T5','T8','T3','T6','.'];
+    assignments = [];
+    for (let y = 0; y < 3; y++) {
+      for (let x = 0; x < 3; x++) {
+        const key = `${x},${y}`;
+        const label = mapping[key];
+        if (label) {
+          const idx = order.indexOf(label);
+          assignments.push(idx >= 0 && idx < 8 ? cut[idx] : '.');
+        } else {
+          assignments.push('.');
+        }
+      }
+    }
     $('#manualAssign').classList.add('hidden');
     $('#finalImport').classList.remove('hidden');
     importStatus();
