@@ -1,1 +1,187 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#6b4226"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css"><title>Tier-Schiebepuzzle Studio</title></head><body><header><h1>🧩 Tier-Schiebepuzzle Studio</h1><nav aria-label="Navigation"><button data-page="play">🎮 Spielen</button><button data-page="solver">🤖 Auto-Löser</button><button data-page="editor">✏️ Variante</button><button data-page="photo">📷 Foto importieren</button><button data-page="help">ℹ️ Hilfe</button></nav></header><main><section id="play" class="page"><div class="bar"><button id="random">Neues Rätsel</button><select id="level"><option value="3,6">🌱 Leicht</option><option value="7,12">⚡ Mittel</option><option value="13,24">🔥 Schwer</option></select><button id="undo">↩ Rückgängig</button><button id="hint">💡 Tipp</button><button id="toSolver">Im Löser öffnen</button></div><div class="stats">Züge: <b id="moves">0</b> · Par: <b id="par">0</b> · Differenz: <b id="delta">0</b> · Zeit: <b id="time">00:00</b></div><div id="game" class="board" role="grid" aria-label="Schiebepuzzle"></div><p id="notice" aria-live="polite"></p></section><section id="solver" class="page hide"><div class="bar"><button id="solve">Prüfen und lösen</button><button id="first">Start</button><button id="back">◀</button><button id="next">▶</button><button id="autoplay">Auto-Play</button></div><div id="solveBoard" class="board"></div><p id="solveStatus"></p><ol id="steps"></ol></section><section id="editor" class="page hide"><p>Element wählen, dann ein Feld antippen. Belegte Felder werden getauscht.</p><div id="palette" class="bar"></div><div id="edit" class="board"></div><p id="valid"></p><label>Varianten-Code <input id="code" aria-label="Varianten-Code"></label><div class="bar"><button id="load">Code laden</button><button id="copy">Code kopieren</button><button id="photoStart">Foto-Start laden</button><button id="clear">Leeren</button><button id="playEdited">Als Spiel starten</button></div><label>Name <input id="saveName"></label><button id="save">Lokal speichern</button><select id="saved"></select><button id="delete">Ausgewählte Variante löschen</button></section><section id="photo" class="page hide"><p>Kein Upload: Bilder werden nur auf diesem Gerät per Canvas verarbeitet.</p><input id="pick" type="file" accept="image/*" capture="environment"><button id="camera">Kamera öffnen</button><video id="video" autoplay playsinline hidden></video><button id="shot" hidden>Aufnehmen</button><canvas id="canvas"></canvas><label>Quadratgröße <input id="size" type="range" min="30" max="100" value="90"></label><button id="cut">9 Kacheln erzeugen</button><div id="previews" class="previews"></div><p>Die neun Ausschnitte sind neutral (1–8 und leer); Rollen ordnest du anschließend im Editor zu.</p></section><section id="help" class="page hide"><h2>So funktioniert es</h2><p>Nur Nachbarn des freien Felds dürfen bewegt werden. Der BFS-Löser durchsucht Zustände schichtweise und liefert daher immer die minimale Zugzahl. Bei 3×3 entscheidet die Inversionsparität: Nicht jede vollständige Reihenfolge ist lösbar.</p><p>Der Fotoimport erkennt keine Flamingos oder Giraffen. Er schneidet ausschließlich geometrisch und lokal im Browser.</p></section></main><script src="puzzle-engine.js"></script><script src="storage.js"></script><script src="image-import.js"></script><script src="app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#155a6b">
+  <meta name="description" content="Mobile Schiebepuzzle-App mit Tierbildern, Löser, Varianten-Editor und lokalem Fotoimport.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%A7%A9%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <title>Tier-Schiebepuzzle Studio</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🧩</span>
+        <div>
+          <h1>Tier-Schiebepuzzle Studio</h1>
+          <p>Spielen · Auto-Löser · Varianten · Fotoimport</p>
+        </div>
+      </div>
+      <nav class="tabbar" aria-label="Bereiche">
+        <button class="tab active" type="button" data-page="play">🎮 Spielen</button>
+        <button class="tab" type="button" data-page="solver">🤖 Löser</button>
+        <button class="tab" type="button" data-page="editor">✏️ Variante</button>
+        <button class="tab" type="button" data-page="import">📷 Foto importieren</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page active" id="play">
+        <div class="page-grid">
+          <section class="card board-card">
+            <div class="wood-frame">
+              <div class="puzzle-board" id="game" aria-label="Schiebepuzzle"></div>
+            </div>
+            <div class="button-row">
+              <button id="random" type="button" class="button accent">🎲 Neues Rätsel</button>
+              <button id="undo" type="button" class="button secondary">↩ Zurück</button>
+              <button id="hint" type="button" class="button secondary">💡 Tipp</button>
+              <button id="toSolver" type="button" class="button primary">🤖 Lösungsweg</button>
+            </div>
+          </section>
+
+          <section class="card panel-card">
+            <h2>Spielmodus</h2>
+            <p class="intro">Tippe auf eine Kachel direkt neben dem freien Feld. Orange umrandete Kacheln sind beweglich.</p>
+            <label class="field-label" for="level">Schwierigkeitsgrad</label>
+            <select id="level" class="select">
+              <option value="3,6">🌱 Leicht – 3 bis 6 Züge</option>
+              <option value="7,12" selected>⚡ Mittel – 7 bis 12 Züge</option>
+              <option value="13,24">🔥 Schwer – 13 bis 24 Züge</option>
+            </select>
+            <div class="metrics">
+              <div class="metric"><b id="moves">0</b><span>Züge</span></div>
+              <div class="metric"><b id="par">0</b><span>Par</span></div>
+              <div class="metric"><b id="delta">0</b><span>Differenz</span></div>
+              <div class="metric"><b id="time">00:00</b><span>Zeit</span></div>
+            </div>
+            <div id="notice" class="notice info" role="status"></div>
+            <h3>Varianten-Code</h3>
+            <div class="input-row">
+              <input id="code" type="text" aria-label="Varianten-Code">
+              <button id="copy" type="button" class="button secondary">📋 Kopieren</button>
+            </div>
+            <p class="small">Der Code beschreibt die Kacheln zeilenweise und kann geteilt oder später wieder geladen werden.</p>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="solver">
+        <div class="page-grid">
+          <section class="card board-card">
+            <div class="wood-frame">
+              <div class="puzzle-board" id="solveBoard" aria-label="Lösungsvorschau"></div>
+            </div>
+            <div class="button-row">
+              <button id="first" type="button" class="button secondary">⏮ Start</button>
+              <button id="back" type="button" class="button secondary">◀ Zurück</button>
+              <button id="next" type="button" class="button primary">Weiter ▶</button>
+            </div>
+          </section>
+          <section class="card panel-card">
+            <h2>Automatischer Löser</h2>
+            <div id="solveStatus" class="notice info" role="status">Bereit zur Analyse.</div>
+            <ol id="steps" class="steps" aria-label="Minimale Zugfolge"></ol>
+            <button id="solve" type="button" class="button accent full">Optimale Lösung berechnen</button>
+            <p class="small">Der Löser verwendet Breitensuche (BFS) und liefert damit eine minimale Zugfolge.</p>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="editor">
+        <div class="page-grid">
+          <section class="card board-card">
+            <div class="wood-frame">
+              <div class="puzzle-board" id="edit" aria-label="Varianteneditor"></div>
+            </div>
+            <div class="button-row">
+              <button id="photoStart" type="button" class="button secondary">📷 Foto-Start</button>
+              <button id="clear" type="button" class="button danger">🧹 Leeren</button>
+              <button id="playEdited" type="button" class="button primary">🎮 Spielen</button>
+            </div>
+          </section>
+          <section class="card panel-card">
+            <h2>Eigene Variante</h2>
+            <p class="intro">Wähle ein Element aus der Palette und tippe anschließend auf ein Feld. Belegte Felder werden getauscht.</p>
+            <div id="palette" class="palette" aria-label="Kachelpalette"></div>
+            <div id="valid" class="notice warn" role="status"></div>
+            <h3>Code laden</h3>
+            <div class="input-row">
+              <input id="codeLoad" type="text" placeholder="G1,F3,F1,G2,K1,F2,G3,K2,." aria-label="Varianten-Code laden">
+              <button id="load" type="button" class="button primary">Laden</button>
+            </div>
+            <h3>Varianten speichern</h3>
+            <div class="input-row">
+              <input id="saveName" type="text" placeholder="Name der Variante" aria-label="Name der Variante">
+              <button id="save" type="button" class="button secondary">Speichern</button>
+            </div>
+            <div class="input-row">
+              <select id="saved" class="select" aria-label="Gespeicherte Varianten"></select>
+              <button id="loadSaved" type="button" class="button secondary">Öffnen</button>
+              <button id="delete" type="button" class="button danger">Löschen</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="import">
+        <section class="card import-card">
+          <h2>📷 Foto importieren</h2>
+          <p class="intro">Die Bildverarbeitung erfolgt ausschließlich lokal in deinem Browser. Wähle ein Foto oder nimm eines mit der Kamera auf. Positioniere danach das Raster exakt über dem 3×3-Puzzle.</p>
+          <div class="button-row import-actions">
+            <label class="button primary file-button">🖼 Bild auswählen
+              <input id="imageInput" type="file" accept="image/*" hidden>
+            </label>
+            <label class="button accent file-button">📸 Kamera öffnen
+              <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+            </label>
+            <button id="resetCrop" type="button" class="button secondary">↺ Raster zurücksetzen</button>
+          </div>
+          <div id="cropWorkspace" class="crop-workspace hidden">
+            <p id="cropHelp" class="notice info">Ziehe die gesamte Maske, um sie zu verschieben. Ziehe einen Eckgriff, um sie quadratisch zu skalieren.</p>
+            <div id="cropStage" class="crop-stage" aria-label="Foto mit zuschneidbarem 3×3 Raster">
+              <img id="sourceImage" alt="Importiertes Puzzlefoto">
+              <div id="cropOverlay" class="crop-overlay">
+                <div class="crop-grid" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                </div>
+                <span class="handle nw" data-handle="nw"></span>
+                <span class="handle ne" data-handle="ne"></span>
+                <span class="handle sw" data-handle="sw"></span>
+                <span class="handle se" data-handle="se"></span>
+              </div>
+            </div>
+            <p id="cropDetails" class="small"></p>
+            <div class="button-row">
+              <button id="cutTiles" type="button" class="button accent">✂️ 9 Kacheln ausschneiden</button>
+            </div>
+          </div>
+          <div id="importResults" class="import-results hidden">
+            <h3>Ausgeschnittene Kacheln und Zuordnung</h3>
+            <p class="small">Ordne jeder ausgeschnittenen Kachel eine Rolle zu. Für ein klassisches 3×3-Puzzle kannst du neutrale Kennungen verwenden; für dieses Tierpuzzle nutze G1–G3, F1–F3, K1–K2 und einmal Frei.</p>
+            <div id="cutPreview" class="cut-preview"></div>
+            <div class="button-row">
+              <button id="applyImported" type="button" class="button green" disabled>✓ Als Puzzle übernehmen</button>
+              <button id="playImported" type="button" class="button primary" disabled>🎮 Als Spiel starten</button>
+            </div>
+            <div id="importStatus" class="notice warn" role="status"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Tier-Schiebepuzzle Studio · Version 1.1.0 · Stand: 26. September 2026</span>
+      <a href="https://github.com/basecore/tier-schiebepuzzle-studio" target="_blank" rel="noopener">GitHub-Projekt</a>
+      <a href="mailto:basecore@gmx.de">basecore@gmx.de</a>
+    </footer>
+  </div>
+
+  <script src="puzzle-engine.js"></script>
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
