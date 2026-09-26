@@ -1,8 +1,9 @@
 (() => {
   'use strict';
 
-  const tiles = ['G1', 'G2', 'G3', 'F1', 'F2', 'F3', 'K1', 'K2', '.'];
-  const rank = { G1: 1, G2: 2, G3: 3, F1: 4, F2: 5, F3: 6, K1: 7, K2: 8 };
+  // Universelle Teile: T1-T8 für Tier/Teil 1-8, '.' für freies Feld
+  const tiles = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', '.'];
+  const rank = { T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8 };
   const neighbors = {
     0: [1, 3], 1: [0, 2, 4], 2: [1, 5],
     3: [0, 4, 6], 4: [1, 3, 5, 7], 5: [2, 4, 8],
@@ -14,6 +15,7 @@
   }
 
   function buildGoals() {
+    // 6 Permutationen der 3 Spalten × 2 Positionen des freien Felds = 12 Ziele
     const perms = [
       [0, 1, 2], [0, 2, 1], [1, 0, 2],
       [1, 2, 0], [2, 0, 1], [2, 1, 0]
@@ -22,13 +24,16 @@
     for (const p of perms) {
       for (const blankTop of [true, false]) {
         const s = Array(9);
-        const gCol = p[0], fCol = p[1], kCol = p[2];
-        s[gCol] = 'G1'; s[gCol + 3] = 'G2'; s[gCol + 6] = 'G3';
-        s[fCol] = 'F1'; s[fCol + 3] = 'F2'; s[fCol + 6] = 'F3';
+        const colA = p[0], colB = p[1], colC = p[2];
+        // Spalte A: T1, T2, T3
+        s[colA] = 'T1'; s[colA + 3] = 'T2'; s[colA + 6] = 'T3';
+        // Spalte B: T4, T5, T6
+        s[colB] = 'T4'; s[colB + 3] = 'T5'; s[colB + 6] = 'T6';
+        // Spalte C: T7, T8 + freies Feld
         if (blankTop) {
-          s[kCol] = '.'; s[kCol + 3] = 'K1'; s[kCol + 6] = 'K2';
+          s[colC] = '.'; s[colC + 3] = 'T7'; s[colC + 6] = 'T8';
         } else {
-          s[kCol] = 'K1'; s[kCol + 3] = 'K2'; s[kCol + 6] = '.';
+          s[colC] = 'T7'; s[colC + 3] = 'T8'; s[colC + 6] = '.';
         }
         all.push(s);
       }
@@ -128,7 +133,7 @@
         return s;
       }
     }
-    return ['G1', 'F3', 'F1', 'G2', 'K1', 'F2', 'G3', 'K2', '.'];
+    return ['T1', 'T6', 'T4', 'T2', 'T7', 'T5', 'T3', 'T8', '.'];
   }
 
   window.Engine = {
