@@ -4,35 +4,31 @@
   const $ = s => document.querySelector(s);
   const $$ = s => [...document.querySelectorAll(s)];
 
+  // Universelle Pfade: assets/tiles/t1.jpg bis t8.jpg
   const images = {
-    G1: 'assets/tiles/giraffe-kopf.jpg',
-    G2: 'assets/tiles/giraffe-hals.jpg',
-    G3: 'assets/tiles/giraffe-beine.jpg',
-    F1: 'assets/tiles/flamingo-kopf.jpg',
-    F2: 'assets/tiles/flamingo-koerper.jpg',
-    F3: 'assets/tiles/flamingo-beine.jpg',
-    K1: 'assets/tiles/koala-kopf.jpg',
-    K2: 'assets/tiles/koala-baum.jpg'
+    T1: 'assets/tiles/t1.jpg',
+    T2: 'assets/tiles/t2.jpg',
+    T3: 'assets/tiles/t3.jpg',
+    T4: 'assets/tiles/t4.jpg',
+    T5: 'assets/tiles/t5.jpg',
+    T6: 'assets/tiles/t6.jpg',
+    T7: 'assets/tiles/t7.jpg',
+    T8: 'assets/tiles/t8.jpg'
   };
 
   const names = {
-    G1: 'Giraffe – Kopf',
-    G2: 'Giraffe – Hals',
-    G3: 'Giraffe – Beine',
-    F1: 'Flamingo – Kopf',
-    F2: 'Flamingo – Körper',
-    F3: 'Flamingo – Beine',
-    K1: 'Koala – Kopf',
-    K2: 'Koala – Baum',
-    '.': 'Freies Feld'
+    T1: 'Teil 1', T2: 'Teil 2', T3: 'Teil 3',
+    T4: 'Teil 4', T5: 'Teil 5', T6: 'Teil 6',
+    T7: 'Teil 7', T8: 'Teil 8',
+    '.': 'Frei'
   };
 
-  const photo = ['G1', 'F3', 'F1', 'G2', 'K1', 'F2', 'G3', 'K2', '.'];
+  const photo = ['T1', 'T6', 'T4', 'T2', 'T7', 'T5', 'T3', 'T8', '.'];
   let state = photo.slice();
   let history = [];
   let solution = [];
   let solutionIndex = 0;
-  let selected = 'G1';
+  let selected = 'T1';
   let suggested = null;
   let timer = null;
   let seconds = 0;
@@ -40,6 +36,8 @@
   let cut = [];
   let assignments = [];
   let customImages = {};
+  let assignSelected = null;
+  let manualMode = false;
 
   const copy = a => a.slice();
 
@@ -126,7 +124,7 @@
 
   function check() {
     if (!Engine.valid(state)) {
-      return { ok: false, msg: 'Ungültig: Alle acht Kacheln und ein freies Feld werden benötigt.' };
+      return { ok: false, msg: 'Ungültig: Alle acht Teile und ein freies Feld werden benötigt.' };
     }
     if (!Engine.possible(state)) {
       return { ok: false, msg: 'Gültig, aber zu keinem der zwölf Zielzustände lösbar.' };
@@ -260,29 +258,80 @@
   function cuts() {
     if (!cropper) return;
     cut = cropper.cutIntoNine();
-    assignments = ['G1', 'F3', 'F1', 'G2', 'K1', 'F2', 'G3', 'K2', '.'];
-    const h = $('#cutPreview');
+    assignments = ['T1', 'T6', 'T4', 'T2', 'T7', 'T5', 'T3', 'T8', '.'];
+    renderAssignPreview();
+    $('#importResults').classList.remove('hidden');
+    $('#manualAssign').classList.add('hidden');
+    $('#finalImport').classList.add('hidden');
+  }
+
+  function renderAssignPreview() {
+    const h = $('#assignPreview');
     h.innerHTML = '';
     cut.forEach((d, i) => {
       const c = document.createElement('div');
-      c.className = 'cut-card';
+      c.className = 'assign-card' + (assignments[i] === assignSelected ? ' selected' : '');
       const im = document.createElement('img');
       im.src = d;
-      const se = document.createElement('select');
-      Engine.tiles.forEach(t => {
-        const o = document.createElement('option');
-        o.value = t;
-        o.textContent = t === '.' ? 'Frei' : `${t} – ${name(t)}`;
-        o.selected = assignments[i] === t;
-        se.append(o);
-      });
-      se.onchange = () => { assignments[i] = se.value; importStatus(); };
-      c.append(im, se);
+      im.alt = `Position ${i + 1}`;
+      c.append(im);
+      c.onclick = () => {
+        assignSelected = assignments[i];
+        renderAssignPreview();
+      };
       h.append(c);
     });
-    $('#importResults').classList.remove('hidden');
-    importStatus();
   }
+
+  $('#startManual').onclick = () => {
+    $('#manualAssign').classList.remove('hidden');
+    $('#importResults').classList.add('hidden');
+    renderManual();
+  };
+
+  function renderManual() {
+    const src = $('#manualSource');
+    const tgt = $('#manualTarget');
+    src.innerHTML = '';
+    tgt.innerHTML = '';
+    cut.forEach((d, i) => {
+      const c = document.createElement('div');
+      c.className = 'manual-card' + (assignments[i] === assignSelected ? ' selected' : '');
+      const im = document.createElement('img');
+      im.src = d;
+      c.append(im);
+      c.onclick = () => {
+        assignSelected = assignments[i];
+        renderManual();
+      };
+      src.append(c);
+    });
+    for (let i = 0; i < 9; i++) {
+      const c = document.createElement('div');
+      c.className = 'manual-card';
+      c.dataset.pos = i;
+      c.onclick = () => {
+        if (assignSelected) {
+          assignments[i] = assignSelected;
+          assignSelected = null;
+          renderManual();
+          importStatus();
+        }
+      };
+      tgt.append(c);
+    }
+  }
+
+  $('#finishManual').onclick = () => {
+    $('#manualAssign').classList.add('hidden');
+    $('#finalImport').classList.remove('hidden');
+    importStatus();
+  };
+
+  $('#cancelManual').onclick = () => {
+    $('#manualAssign').classList.add('hidden');
+    $('#importResults').classList.remove('hidden');
+  };
 
   function importStatus() {
     const ok = assignments.length === 9 && Engine.tiles.every(t => assignments.filter(x => x === t).length === 1);
@@ -348,7 +397,7 @@
     const r = Engine.solve(state);
     text('#par', r.path.length);
     stats();
-    notice('#notice', 'Klicke eine orange markierte Kachel an. Ziel: Tiere korrekt senkrecht zusammensetzen.', 'info');
+    notice('#notice', 'Klicke eine orange markierte Kachel an. Ziel: Teile korrekt senkrecht zusammensetzen.', 'info');
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').catch(() => {});
     }
