@@ -12,8 +12,8 @@
   const photo = ['T1','T6','T4','T2','T7','T5','T3','T8','.'];
   let state = photo.slice(), history = [], solution = [], solutionIndex = 0;
   let selected = 'T1', suggested = null, timer = null, seconds = 0;
-  let cropper = null, cut = [], assignments = [], customImages = {};
-  let assignSelected = null, manualFrames = [], manualStageImg = null, manualStageRect = null;
+  let cropper = null, cut = [], tileRoles = [], customImages = {};
+  let manualFrames = [], manualStageImg = null, manualStageRect = null;
 
   const copy = a => a.slice();
 
@@ -174,6 +174,8 @@
       const im = $('#sourceImage');
       im.onload = () => {
         $('#cropWorkspace').classList.remove('hidden');
+        $('#importResults').classList.add('hidden');
+        $('#manualAssign').classList.add('hidden');
         cropper = ImageImport.createImageCropper({ stage: $('#cropStage'), image: im, overlay: $('#cropOverlay'), details: $('#cropDetails') });
         cropper.reset();
       };
@@ -185,131 +187,49 @@
   function cuts() {
     if (!cropper) return;
     cut = cropper.cutIntoNine();
-    assignments = ['T1','T6','T4','T2','T7','T5','T3','T8','.'];
-    renderAssignPreview();
+    tileRoles = Engine.tiles.slice();
+    renderCutPreview();
     $('#importResults').classList.remove('hidden');
-    $('#manualAssign').classList.add('hidden');
-    $('#finalImport').classList.add('hidden');
-  }
-
-  function renderAssignPreview() {
-    const h = $('#assignPreview'); h.innerHTML = '';
-    cut.forEach((d, i) => {
-      const c = document.createElement('div');
-      c.className = 'assign-card' + (assignments[i] === assignSelected ? ' selected' : '');
-      const im = document.createElement('img'); im.src = d; im.alt = `Pos ${i+1}`;
-      c.append(im);
-      c.onclick = () => { assignSelected = assignments[i]; renderAssignPreview(); };
-      h.append(c);
-    });
-  }
-
-  $('#startManual').onclick = () => {
-    $('#manualAssign').classList.remove('hidden');
-    $('#importResults').classList.add('hidden');
-    initManualFrames();
-  };
-
-  function initManualFrames() {
-    const stage = $('#manualStage');
-    stage.innerHTML = '';
-    manualStageImg = document.createElement('img');
-    manualStageImg.src = cut[0];
-    stage.append(manualStageImg);
-    manualStageRect = null;
-
-    const positions = [
-      { x: 0, y: 0, label: 'T1' }, { x: 1, y: 0, label: 'T4' }, { x: 2, y: 0, label: 'T7' },
-      { x: 0, y: 1, label: 'T2' }, { x: 1, y: 1, label: 'T5' }, { x: 2, y: 1, label: 'T8' },
-      { x: 0, y: 2, label: 'T3' }, { x: 1, y: 2, label: 'T6' }
-    ];
-
-    manualFrames = positions.map((pos, idx) => {
-      const f = document.createElement('div');
-      f.className = 'frame';
-      f.style.left = `${pos.x * 33.33}%`;
-      f.style.top = `${pos.y * 33.33}%`;
-      f.style.width = '33.33%';
-      f.style.height = '33.33%';
-      const lbl = document.createElement('span');
-      lbl.className = 'frame-label';
-      lbl.textContent = pos.label;
-      f.append(lbl);
-      stage.append(f);
-      return { el: f, x: pos.x, y: pos.y, w: 1, h: 1, pointer: null, label: pos.label };
-    });
-
-    manualStageImg.onload = () => { manualStageRect = stage.getBoundingClientRect(); };
-    window.addEventListener('resize', () => { manualStageRect = stage.getBoundingClientRect(); });
-
-    manualFrames.forEach(frame => {
-      frame.el.addEventListener('pointerdown', e => {
-        e.preventDefault();
-        frame.pointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, origX: frame.x, origY: frame.y };
-        frame.el.classList.add('dragging');
-        frame.el.setPointerCapture?.(e.pointerId);
-      });
-      frame.el.addEventListener('pointermove', e => {
-        if (!frame.pointer || e.pointerId !== frame.pointer.id || !manualStageRect) return;
-        const dx = e.clientX - frame.pointer.startX;
-        const dy = e.clientY - frame.pointer.startY;
-        const cellW = manualStageRect.width / 3;
-        const cellH = manualStageRect.height / 3;
-        const newX = Math.round((frame.pointer.origX * cellW + dx) / cellW);
-        const newY = Math.round((frame.pointer.origY * cellH + dy) / cellH);
-        frame.x = Math.max(0, Math.min(2, newX));
-        frame.y = Math.max(0, Math.min(2, newY));
-        frame.el.style.left = `${frame.x * 33.33}%`;
-        frame.el.style.top = `${frame.y * 33.33}%`;
-      });
-      frame.el.addEventListener('pointerup', e => {
-        if (frame.pointer && e.pointerId === frame.pointer.id) {
-          frame.pointer = null;
-          frame.el.classList.remove('dragging');
-        }
-      });
-    });
-  }
-
-  $('#finishManual').onclick = () => {
-    const mapping = {};
-    manualFrames.forEach(f => { mapping[`${f.x},${f.y}`] = f.label; });
-    const order = ['T1','T4','T7','T2','T5','T8','T3','T6','.'];
-    assignments = [];
-    for (let y = 0; y < 3; y++) {
-      for (let x = 0; x < 3; x++) {
-        const key = `${x},${y}`;
-        const label = mapping[key];
-        if (label) {
-          const idx = order.indexOf(label);
-          assignments.push(idx >= 0 && idx < 8 ? cut[idx] : '.');
-        } else {
-          assignments.push('.');
-        }
-      }
-    }
-    $('#manualAssign').classList.add('hidden');
-    $('#finalImport').classList.remove('hidden');
     importStatus();
-  };
+  }
 
-  $('#cancelManual').onclick = () => {
-    $('#manualAssign').classList.add('hidden');
-    $('#importResults').classList.remove('hidden');
-  };
+  function renderCutPreview() {
+    const h = $('#cutPreview');
+    h.innerHTML = '';
+    cut.forEach((d, i) => {
+      const card = document.createElement('div');
+      card.className = 'cut-card';
+      const im = document.createElement('img');
+      im.src = d;
+      const sel = document.createElement('select');
+      Engine.tiles.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t === '.' ? 'Frei' : `${t} – ${name(t)}`;
+        opt.selected = tileRoles[i] === t;
+        sel.append(opt);
+      });
+      sel.onchange = () => {
+        tileRoles[i] = sel.value;
+        importStatus();
+      };
+      card.append(im, sel);
+      h.append(card);
+    });
+  }
 
   function importStatus() {
-    const ok = assignments.length === 9 && Engine.tiles.every(t => assignments.filter(x => x === t).length === 1);
+    const ok = tileRoles.length === 9 && Engine.tiles.every(t => tileRoles.filter(x => x === t).length === 1);
     $('#applyImported').disabled = !ok;
     $('#playImported').disabled = !ok;
-    notice('#importStatus', ok ? 'Zuordnung vollständig.' : 'Jede Rolle muss genau einmal gewählt werden.', ok ? 'ok' : 'warn');
+    notice('#importStatus', ok ? 'Zuordnung vollständig.' : 'Jede Rolle (T1-T8 und Frei) muss genau einmal gewählt werden.', ok ? 'ok' : 'warn');
   }
 
   function applyImport(play) {
     if ($('#applyImported').disabled) return;
     customImages = {};
-    assignments.forEach((r, i) => { if (r !== '.') customImages[r] = cut[i]; });
-    state = copy(assignments);
+    tileRoles.forEach((r, i) => { if (r !== '.') customImages[r] = cut[i]; });
+    state = copy(tileRoles);
     history = [];
     const r = Engine.solve(state);
     text('#par', r.path.length); stats();

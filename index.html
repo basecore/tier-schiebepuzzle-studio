@@ -131,34 +131,30 @@
           </div>
 
           <div id="importResults" class="import-results hidden">
-            <h3>Schritt 1: Teile zuordnen</h3>
-            <p class="small">Tippe ein Teil an, dann die Zielposition.</p>
-            <div id="assignPreview" class="assign-preview"></div>
-            <div class="button-row"><button id="startManual" class="button primary">Schritt 2: Manuell anpassen</button></div>
-          </div>
-
-          <div id="manualAssign" class="manual-assign hidden">
-            <h3>Manuelle Zuordnung</h3>
-            <p class="small">Ziehe jeden der 8 Rahmen an die richtige Position im Foto.</p>
-            <div id="manualStage" class="manual-stage"></div>
-            <div class="button-row">
-              <button id="finishManual" class="button green">✓ Fertig</button>
-              <button id="cancelManual" class="button secondary">Abbrechen</button>
-            </div>
-          </div>
-
-          <div id="finalImport" class="final-import hidden">
+            <h3>Schritt 1: Teile den Rollen zuordnen</h3>
+            <p class="small">Wähle für jede der 9 Kacheln die richtige Rolle (T1-T8 oder Frei).</p>
+            <div id="cutPreview" class="cut-preview"></div>
             <div class="button-row">
               <button id="applyImported" class="button green" disabled>✓ Als Puzzle übernehmen</button>
               <button id="playImported" class="button primary" disabled>🎮 Als Spiel starten</button>
             </div>
             <div id="importStatus" class="notice warn"></div>
           </div>
+
+          <div id="manualAssign" class="manual-assign hidden">
+            <h3>Schritt 2: Rahmen einzeln anpassen</h3>
+            <p class="small">Verschiebe jeden der 8 orangen Rahmen auf die richtige Position im Originalfoto.</p>
+            <div id="manualStage" class="manual-stage"></div>
+            <div class="button-row">
+              <button id="finishManual" class="button green">✓ Fertig</button>
+              <button id="cancelManual" class="button secondary">Abbrechen</button>
+            </div>
+          </div>
         </section>
       </section>
     </main>
 
-    <footer class="site-footer"><span>Schiebepuzzle Studio · Version 1.4.0</span><a href="https://github.com/basecore/tier-schiebepuzzle-studio">GitHub</a></footer>
+    <footer class="site-footer"><span>Schiebepuzzle Studio · Version 1.5.0</span><a href="https://github.com/basecore/tier-schiebepuzzle-studio">GitHub</a></footer>
   </div>
 
   <div id="successModal" class="modal hidden">
