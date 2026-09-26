@@ -92,15 +92,6 @@
             <div id="valid" class="notice warn"></div>
             <h3>Code laden</h3>
             <div class="input-row"><input id="codeLoad" placeholder="T1,T6,T4,T2,T7,T5,T3,T8,."><button id="load" class="button primary">Laden</button></div>
-            <h3>Varianten speichern</h3>
-            <div class="input-row">
-              <input id="saveName" placeholder="Name der Variante"><button id="save" class="button secondary">Speichern</button>
-            </div>
-            <div class="input-row">
-              <select id="saved" class="select"></select>
-              <button id="loadSaved" class="button secondary">Öffnen</button>
-              <button id="delete" class="button danger">Löschen</button>
-            </div>
           </section>
         </div>
       </section>
@@ -120,10 +111,8 @@
               <img id="sourceImage" alt="Importiertes Foto">
               <div id="cropOverlay" class="crop-overlay">
                 <div class="crop-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                <span class="handle nw" data-handle="nw"></span>
-                <span class="handle ne" data-handle="ne"></span>
-                <span class="handle sw" data-handle="sw"></span>
-                <span class="handle se" data-handle="se"></span>
+                <span class="handle nw" data-handle="nw"></span><span class="handle ne" data-handle="ne"></span>
+                <span class="handle sw" data-handle="sw"></span><span class="handle se" data-handle="se"></span>
               </div>
             </div>
             <p id="cropDetails" class="small"></p>
@@ -131,51 +120,43 @@
           </div>
 
           <div id="importResults" class="import-results hidden">
-            <h3>Schritt 1: Teile den Rollen zuordnen</h3>
-            <p class="small">Wähle für jede der 9 Kacheln die richtige Rolle (T1-T8 oder Frei).</p>
-            <div id="cutPreview" class="cut-preview"></div>
+            <h3>Teile zuordnen</h3>
+            <p class="small">Wähle eine Methode. Änderungen tauschen Rollen automatisch, damit jede Rolle genau einmal vorkommt.</p>
+            <div class="button-row">
+              <button id="modeRoles" class="button primary">🏷 Rollen wählen</button>
+              <button id="modeSort" class="button secondary">↕️ Gelöst sortieren</button>
+            </div>
+
+            <div id="roleMode" class="import-mode">
+              <p class="small">Wähle bei jeder Kachel die passende Rolle. Wenn du eine bereits verwendete Rolle auswählst, werden die Rollen der beiden Kacheln getauscht.</p>
+              <div id="cutPreview" class="cut-preview"></div>
+            </div>
+
+            <div id="sortMode" class="import-mode hidden">
+              <p class="small">Bringe die Bildteile durch Antippen in die gelöste Reihenfolge. Tippe zuerst eine Kachel, dann den Zielplatz. Die Rollen werden anschließend automatisch vergeben.</p>
+              <div class="sort-labels">
+                <span>Objekt 1 – Oben</span><span>Objekt 2 – Oben</span><span>Objekt 3 – Oben / Frei</span>
+                <span>Objekt 1 – Mitte</span><span>Objekt 2 – Mitte</span><span>Objekt 3 – Mitte</span>
+                <span>Objekt 1 – Unten</span><span>Objekt 2 – Unten</span><span>Frei / Objekt 3 – Unten</span>
+              </div>
+              <div id="sortGrid" class="sort-grid"></div>
+            </div>
+
             <div class="button-row">
               <button id="applyImported" class="button green" disabled>✓ Als Puzzle übernehmen</button>
               <button id="playImported" class="button primary" disabled>🎮 Als Spiel starten</button>
             </div>
             <div id="importStatus" class="notice warn"></div>
           </div>
-
-          <div id="manualAssign" class="manual-assign hidden">
-            <h3>Schritt 2: Rahmen einzeln anpassen</h3>
-            <p class="small">Verschiebe jeden der 8 orangen Rahmen auf die richtige Position im Originalfoto.</p>
-            <div id="manualStage" class="manual-stage"></div>
-            <div class="button-row">
-              <button id="finishManual" class="button green">✓ Fertig</button>
-              <button id="cancelManual" class="button secondary">Abbrechen</button>
-            </div>
-          </div>
         </section>
       </section>
     </main>
 
-    <footer class="site-footer"><span>Schiebepuzzle Studio · Version 1.5.0</span><a href="https://github.com/basecore/tier-schiebepuzzle-studio">GitHub</a></footer>
+    <footer class="site-footer"><span>Schiebepuzzle Studio · Version 1.6.0</span><a href="https://github.com/basecore/tier-schiebepuzzle-studio">GitHub</a></footer>
   </div>
 
-  <div id="successModal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-icon">🎉</div>
-      <h2>Geschafft!</h2>
-      <p class="modal-stats">
-        <span id="modalMoves">0</span> Züge<br>
-        <span id="modalPar">0</span> Par<br>
-        <span id="modalTime">00:00</span> Zeit
-      </p>
-      <div class="button-row">
-        <button id="modalNew" class="button accent">🎲 Neues Rätsel</button>
-        <button id="modalClose" class="button secondary">Schließen</button>
-      </div>
-    </div>
-  </div>
+  <div id="successModal" class="modal hidden"><div class="modal-content"><div class="modal-icon">🎉</div><h2>Geschafft!</h2><p class="modal-stats"><span id="modalMoves">0</span> Züge<br><span id="modalPar">0</span> Par<br><span id="modalTime">00:00</span> Zeit</p><div class="button-row"><button id="modalNew" class="button accent">🎲 Neues Rätsel</button><button id="modalClose" class="button secondary">Schließen</button></div></div></div>
 
-  <script src="puzzle-engine.js"></script>
-  <script src="storage.js"></script>
-  <script src="image-import.js"></script>
-  <script src="app.js"></script>
+  <script src="puzzle-engine.js"></script><script src="storage.js"></script><script src="image-import.js"></script><script src="app.js"></script>
 </body>
 </html>
