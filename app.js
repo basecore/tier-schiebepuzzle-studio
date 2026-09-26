@@ -1,1 +1,309 @@
-(()=>{const $=s=>document.querySelector(s),photo=['G1','F3','F1','G2','K1','F2','G3','K2','.'];let s=Engine.goal.slice(),hist=[],sol=[],at=0,tick,sec=0,pick='';function board(id,a,fn){let b=$(id);b.innerHTML='';a.forEach((v,i)=>{let q=document.createElement('button');q.className='tile '+(v==='.'?'empty':'');q.textContent=v;q.setAttribute('aria-label',v==='.'?'Freies Feld':v);q.onclick=()=>fn&&fn(i);b.append(q)})}function draw(){board('#game',s,i=>{let n=Engine.next(s).find(n=>n.state[i]==='.');if(n){hist.push(s);s=n.state;$('#moves').textContent=hist.length;$('#delta').textContent=hist.length-(+$('#par').textContent);draw();if(Engine.key(s)===Engine.key(Engine.goal)){$('#notice').textContent='🎉 Geschafft!';clearInterval(tick)}});board('#solveBoard',at?sol[at-1].state:s);$('#code').value=s.join(',')}function editor(){let p=$('#palette');p.innerHTML='';Engine.goal.forEach(v=>{let b=document.createElement('button');b.textContent=v;b.onclick=()=>pick=v;p.append(b)});board('#edit',s,i=>{if(!pick)return;let j=s.indexOf(pick);if(j>=0)[s[i],s[j]]=[s[j],s[i]];$('#valid').textContent=Engine.valid(s)?(Engine.possible(s)?'Gültig und lösbar: '+Engine.solve(s).path.length+' minimale Züge.':'Gültig, aber unlösbar.'):'Unvollständig oder doppelt.';draw()})}document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hide',x.id!==b.dataset.page)));$('#random').onclick=()=>{let[a,b]=$('#level').value.split(',').map(Number);s=Engine.random(a,b);hist=[];$('#moves').textContent=0;$('#par').textContent=Engine.solve(s).path.length;sec=0;clearInterval(tick);tick=setInterval(()=>$('#time').textContent=String(sec/60|0).padStart(2,'0')+':'+String(++sec%60).padStart(2,'0'),1000);draw()};$('#undo').onclick=()=>{if(hist.length){s=hist.pop();$('#moves').textContent=hist.length;draw()}};$('#hint').onclick=()=>{let p=Engine.solve(s).path[0];$('#notice').textContent=p?'Tipp: '+p.tile+' '+p.arrow:'Schon gelöst.'};$('#solve').onclick=()=>{let r=Engine.solve(s),now=s.slice();sol=r.path.map(x=>({...x,state:now=x.state}));at=0;$('#solveStatus').textContent=r.status+' – '+r.path.length+' minimale Züge';$('#steps').innerHTML=r.path.map((x,i)=>'<li data-i="'+i+'">'+(i+1)+'. '+x.tile+' '+x.arrow+'</li>').join('');document.querySelectorAll('#steps li').forEach(e=>e.onclick=()=>{at=+e.dataset.i+1;draw()});draw()};$('#toSolver').onclick=()=>{$('[data-page="solver"]').click();$('#solve').click()};$('#first').onclick=()=>{at=0;draw()};$('#back').onclick=()=>{at=Math.max(0,at-1);draw()};$('#next').onclick=()=>{at=Math.min(sol.length,at+1);draw()};$('#load').onclick=()=>{let a=$('#code').value.split(',').map(x=>x.trim());$('#valid').textContent=Engine.valid(a)?'Code geladen.':'Ungültiger Code: alle neun eindeutigen Werte sind nötig.';if(Engine.valid(a)){s=a;draw();editor()}};$('#copy').onclick=()=>navigator.clipboard.writeText(s.join(','));$('#photoStart').onclick=()=>{s=photo.slice();draw();editor()};$('#clear').onclick=()=>{s=Array(9).fill('');editor()};$('#playEdited').onclick=()=>{$('[data-page="play"]').click();draw()};function saved(){$('#saved').innerHTML=Store.all().map(x=>'<option>'+x.name+'</option>').join('')}$('#save').onclick=()=>{Store.put($('#saveName').value||'Variante',s);saved()};$('#delete').onclick=()=>{if(confirm('Variante wirklich löschen?')){Store.del($('#saved').value);saved()}};editor();saved();draw();if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js')})();
+(() => {
+  const $ = selector => document.querySelector(selector);
+
+  const photoStart = [
+    'G1', 'F3', 'F1',
+    'G2', 'K1', 'F2',
+    'G3', 'K2', '.'
+  ];
+
+  let state = Engine.goal.slice();
+  let history = [];
+  let solutionSteps = [];
+  let solutionPosition = 0;
+  let timerHandle = null;
+  let elapsedSeconds = 0;
+  let selectedTile = '';
+
+  function renderBoard(selector, tiles, onTileClick) {
+    const container = $(selector);
+
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = '';
+
+    tiles.forEach((tile, index) => {
+      const button = document.createElement('button');
+
+      button.className = `tile ${tile === '.' ? 'empty' : ''}`;
+      button.textContent = tile;
+      button.type = 'button';
+
+      button.setAttribute(
+        'aria-label',
+        tile === '.' ? 'Freies Feld' : `Kachel ${tile}`
+      );
+
+      button.onclick = () => {
+        if (onTileClick) {
+          onTileClick(index);
+        }
+      };
+
+      container.append(button);
+    });
+  }
+
+  function setText(selector, value) {
+    const element = $(selector);
+
+    if (element) {
+      element.textContent = value;
+    }
+  }
+
+  function currentSolverState() {
+    if (solutionPosition <= 0) {
+      return state;
+    }
+
+    const step = solutionSteps[solutionPosition - 1];
+
+    return step?.state || state;
+  }
+
+  function isSolved() {
+    return Engine.key(state) === Engine.key(Engine.goal);
+  }
+
+  function updateMoveCounters() {
+    setText('#moves', history.length);
+
+    const parElement = $('#par');
+    const par = Number(parElement?.textContent);
+
+    if (Number.isFinite(par)) {
+      setText('#delta', history.length - par);
+    } else {
+      setText('#delta', '–');
+    }
+  }
+
+  function updateVariantCode() {
+    const codeInput = $('#code');
+
+    if (codeInput) {
+      codeInput.value = state.join(',');
+    }
+  }
+
+  function renderGameBoard() {
+    renderBoard('#game', state, clickedIndex => {
+      const legalMove = Engine.next(state).find(
+        move => move.state[clickedIndex] === '.'
+      );
+
+      if (!legalMove) {
+        return;
+      }
+
+      history.push(state.slice());
+      state = legalMove.state.slice();
+
+      updateMoveCounters();
+      renderAll();
+
+      if (isSolved()) {
+        setText('#notice', '🎉 Geschafft! Alle Tiere sind korrekt zusammengesetzt.');
+        clearInterval(timerHandle);
+      }
+    });
+  }
+
+  function renderSolverBoard() {
+    renderBoard('#solveBoard', currentSolverState());
+  }
+
+  function renderAll() {
+    renderGameBoard();
+    renderSolverBoard();
+    updateVariantCode();
+  }
+
+  function renderEditorPalette() {
+    const palette = $('#palette');
+
+    if (!palette) {
+      return;
+    }
+
+    palette.innerHTML = '';
+
+    Engine.goal.forEach(tile => {
+      const button = document.createElement('button');
+
+      button.type = 'button';
+      button.textContent = tile;
+      button.className = tile === selectedTile ? 'selected' : '';
+
+      button.onclick = () => {
+        selectedTile = tile;
+        renderEditorPalette();
+      };
+
+      palette.append(button);
+    });
+  }
+
+  function renderEditorBoard() {
+    renderBoard('#edit', state, index => {
+      if (!selectedTile) {
+        setText('#valid', 'Bitte zuerst eine Kachel aus der Palette auswählen.');
+        return;
+      }
+
+      const oldIndex = state.indexOf(selectedTile);
+
+      if (oldIndex >= 0) {
+        [state[index], state[oldIndex]] = [state[oldIndex], state[index]];
+      } else {
+        state[index] = selectedTile;
+      }
+
+      updateEditorValidation();
+      renderAll();
+      renderEditorBoard();
+    });
+  }
+
+  function updateEditorValidation() {
+    const validation = $('#valid');
+
+    if (!validation) {
+      return;
+    }
+
+    if (!Engine.valid(state)) {
+      validation.textContent =
+        'Ungültige oder unvollständige Variante: Jede Kachel und genau ein freies Feld müssen genau einmal vorhanden sein.';
+      return;
+    }
+
+    if (!Engine.possible(state)) {
+      validation.textContent =
+        'Gültig, aber unlösbar: Diese Kachelanordnung kann durch Schieben nicht gelöst werden.';
+      return;
+    }
+
+    const result = Engine.solve(state);
+
+    validation.textContent =
+      `Gültig und lösbar: ${result.path.length} minimale Züge.`;
+  }
+
+  function setupEditor() {
+    renderEditorPalette();
+    renderEditorBoard();
+    updateEditorValidation();
+  }
+
+  function formatTime(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return (
+      `${String(minutes).padStart(2, '0')}:` +
+      `${String(seconds).padStart(2, '0')}`
+    );
+  }
+
+  function startTimer() {
+    clearInterval(timerHandle);
+
+    elapsedSeconds = 0;
+    setText('#time', formatTime(elapsedSeconds));
+
+    timerHandle = setInterval(() => {
+      elapsedSeconds += 1;
+      setText('#time', formatTime(elapsedSeconds));
+    }, 1000);
+  }
+
+  function createRandomGame() {
+    const level = $('#level');
+
+    if (!level) {
+      return;
+    }
+
+    const [minimum, maximum] = level.value
+      .split(',')
+      .map(Number);
+
+    state = Engine.random(minimum, maximum);
+    history = [];
+
+    const result = Engine.solve(state);
+
+    setText('#moves', '0');
+    setText('#par', result.path.length);
+    setText('#delta', '0');
+    setText(
+      '#notice',
+      `Neues Rätsel erstellt. Die optimale Lösung benötigt ${result.path.length} Züge.`
+    );
+
+    startTimer();
+    renderAll();
+    updateEditorValidation();
+  }
+
+  function undoMove() {
+    if (!history.length) {
+      return;
+    }
+
+    state = history.pop();
+
+    updateMoveCounters();
+    renderAll();
+    updateEditorValidation();
+  }
+
+  function showHint() {
+    if (!Engine.valid(state)) {
+      setText('#notice', 'Die aktuelle Variante ist ungültig.');
+      return;
+    }
+
+    const result = Engine.solve(state);
+
+    if (!result.path.length) {
+      setText('#notice', 'Das Puzzle ist bereits gelöst.');
+      return;
+    }
+
+    const hint = result.path[0];
+
+    setText(
+      '#notice',
+      `💡 Tipp: Schiebe ${hint.tile} ${hint.arrow}.`
+    );
+  }
+
+  function calculateSolution() {
+    if (!Engine.valid(state)) {
+      setText(
+        '#solveStatus',
+        'Ungültige Variante: Es werden acht eindeutige Kacheln und ein freies Feld benötigt.'
+      );
+
+      solutionSteps = [];
+      solutionPosition = 0;
+      renderSolverBoard();
+      return;
+    }
+
+    const result = Engine.solve(state);
+
+    solutionSteps = [];
+    solutionPosition = 0;
+
+    let currentState = state.slice();
+
+    result.path.forEach(step => {
+      currentState = step.state.slice();
+
+      solutionSteps.push({
