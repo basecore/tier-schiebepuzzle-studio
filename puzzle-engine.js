@@ -1,1 +1,104 @@
-(()=>{const goal=['G1','G2','G3','F1','F2','F3','K1','K2','.'],key=s=>s.join(',');const D=[[-1,0,'↓'],[1,0,'↑'],[0,-1,'→'],[0,1,'←']];function valid(s){return Array.isArray(s)&&s.length===9&&new Set(s).size===9&&s.filter(x=>x==='.').length===1&&s.every(x=>goal.includes(x))}function possible(s){if(!valid(s))return false;let a=s.filter(x=>x!=='.').map(x=>goal.indexOf(x)),n=0;for(let i=0;i<8;i++)for(let j=i+1;j<8;j++)if(a[i]>a[j])n++;return n%2===0}function next(s){let z=s.indexOf('.'),r=z/3|0,c=z%3,out=[];for(const[dr,dc,arrow]of D){let rr=r+dr,cc=c+dc;if(rr>=0&&rr<3&&cc>=0&&cc<3){let i=rr*3+cc,a=s.slice();[a[z],a[i]]=[a[i],a[z]];out.push({state:a,tile:s[i],arrow})}}return out}function solve(start){if(!valid(start))return{status:'ungültig',path:[]};if(!possible(start))return{status:'unlösbar',path:[]};let q=[start],p=new Map([[key(start),null]]),m=new Map;for(let h=0;h<q.length;h++){let s=q[h];if(key(s)===key(goal)){let path=[];while(p.get(key(s))){path.push(m.get(key(s)));s=p.get(key(s))}return{status:'lösbar',path:path.reverse()}}for(let n of next(s))if(!p.has(key(n.state))){p.set(key(n.state),s);m.set(key(n.state),n);q.push(n.state)}}}function random(min,max){for(let k=0;k<500;k++){let s=goal.slice();for(let i=0;i<45;i++){let n=next(s);s=n[Math.random()*n.length|0].state}let d=solve(s).path.length;if(d>=min&&d<=max)return s}return goal.slice()}window.Engine={goal,key,valid,possible,next,solve,random}})();
+(() => {
+  'use strict';
+  const tiles = ['G1', 'G2', 'G3', 'F1', 'F2', 'F3', 'K1', 'K2', '.'];
+  const rank = { G1: 1, G2: 2, G3: 3, F1: 4, F2: 5, F3: 6, K1: 7, K2: 8 };
+  const neighbors = { 0: [1, 3], 1: [0, 2, 4], 2: [1, 5], 3: [0, 4, 6], 4: [1, 3, 5, 7], 5: [2, 4, 8], 6: [3, 7], 7: [4, 6, 8], 8: [5, 7] };
+  function key(state) { return state.join(','); }
+  function buildGoals() {
+    const orders = [['G', 'F', 'K'], ['G', 'K', 'F'], ['F', 'G', 'K'], ['F', 'K', 'G'], ['K', 'G', 'F'], ['K', 'F', 'G']];
+    const all = [];
+    for (const order of orders) {
+      for (const blankOnTop of [true, false]) {
+        const state = Array(9);
+        order.forEach((animal, column) => {
+          if (animal === 'G') { state[column] = 'G1'; state[column + 3] = 'G2'; state[column + 6] = 'G3'; }
+          else if (animal === 'F') { state[column] = 'F1'; state[column + 3] = 'F2'; state[column + 6] = 'F3'; }
+          else if (blankOnTop) { state[column] = '.'; state[column + 3] = 'K1'; state[column + 6] = 'K2'; }
+          else { state[column] = 'K1'; state[column + 3] = 'K2'; state[column + 6] = '.'; }
+        });
+        all.push(state);
+      }
+    }
+    return all;
+  }
+  const goals = buildGoals();
+  const goalKeys = new Set(goals.map(key));
+  function valid(state) { return Array.isArray(state) && state.length === 9 && tiles.every(tile => state.filter(value => value === tile).length === 1); }
+  function inversions(state) {
+    const values = state.filter(tile => tile !== '.').map(tile => rank[tile]);
+    let total = 0;
+    for (let left = 0; left < values.length; left += 1) {
+      for (let right = left + 1; right < values.length; right += 1) {
+        if (values[left] > values[right]) total += 1;
+      }
+    }
+    return total;
+  }
+  function isGoal(state) { return goalKeys.has(key(state)); }
+  function direction(from, to) {
+    const difference = to - from;
+    if (difference === -3) return { arrow: '⬆️', word: 'nach oben' };
+    if (difference === 3) return { arrow: '⬇️', word: 'nach unten' };
+    if (difference === -1) return { arrow: '⬅️', word: 'nach links' };
+    return { arrow: '➡️', word: 'nach rechts' };
+  }
+  function next(state) {
+    if (!valid(state)) return [];
+    const empty = state.indexOf('.');
+    return neighbors[empty].map(from => {
+      const copy = state.slice();
+      const tile = copy[from];
+      copy[empty] = tile;
+      copy[from] = '.';
+      return { tile, from, to: empty, ...direction(from, empty), state: copy };
+    });
+  }
+  function possible(state) {
+    if (!valid(state)) return false;
+    const parity = inversions(state) % 2;
+    return goals.some(goal => inversions(goal) % 2 === parity);
+  }
+  function solve(start) {
+    if (!valid(start)) return { status: 'Ungültig', path: [] };
+    if (isGoal(start)) return { status: 'Bereits gelöst', path: [] };
+    if (!possible(start)) return { status: 'Unlösbar', path: [] };
+    const queue = [start.slice()];
+    const parents = new Map([[key(start), null]]);
+    let cursor = 0;
+    let end = null;
+    while (cursor < queue.length && !end) {
+      const current = queue[cursor++];
+      for (const move of next(current)) {
+        const moveKey = key(move.state);
+        if (parents.has(moveKey)) continue;
+        parents.set(moveKey, { previous: key(current), move });
+        if (isGoal(move.state)) { end = moveKey; break; }
+        queue.push(move.state);
+      }
+    }
+    if (!end) return { status: 'Unlösbar', path: [] };
+    const path = [];
+    for (let at = end; parents.get(at); at = parents.get(at).previous) path.push(parents.get(at).move);
+    path.reverse();
+    return { status: 'Lösbar', path };
+  }
+  function random(minimum = 7, maximum = 12) {
+    const min = Number(minimum), max = Number(maximum);
+    for (let attempt = 0; attempt < 1000; attempt += 1) {
+      const state = goals[Math.floor(Math.random() * goals.length)].slice();
+      let previousEmpty = -1;
+      const shuffleCount = max + 5 + Math.floor(Math.random() * 11);
+      for (let step = 0; step < shuffleCount; step += 1) {
+        const empty = state.indexOf('.');
+        const candidates = neighbors[empty].filter(index => index !== previousEmpty);
+        const from = candidates[Math.floor(Math.random() * candidates.length)];
+        previousEmpty = empty;
+        [state[empty], state[from]] = [state[from], state[empty]];
+      }
+      const result = solve(state);
+      if (result.status === 'Lösbar' && result.path.length >= min && result.path.length <= max) return state;
+    }
+    return ['G1', 'F3', 'F1', 'G2', 'K1', 'F2', 'G3', 'K2', '.'];
+  }
+  window.Engine = { tiles, goal: goals[0].slice(), goals: goals.map(goal => goal.slice()), neighbors, key, valid, inversions, isGoal, next, possible, solve, random };
+})();

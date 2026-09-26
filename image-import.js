@@ -1,1 +1,104 @@
-(()=>{let stream;const $=s=>document.querySelector(s),can=$('#canvas'),x=can.getContext('2d'),v=$('#video');$('#pick').onchange=()=>{let f=$('#pick').files[0],im=new Image;if(!f)return;im.onload=()=>{can.width=360;can.height=360*im.height/im.width;x.drawImage(im,0,0,can.width,can.height)};im.src=URL.createObjectURL(f)};$('#camera').onclick=async()=>{if(!navigator.mediaDevices){$('#pick').click();return}stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});v.srcObject=stream;v.hidden=false;$('#shot').hidden=false};$('#shot').onclick=()=>{can.width=v.videoWidth;can.height=v.videoHeight;x.drawImage(v,0,0);stream.getTracks().forEach(t=>t.stop());v.hidden=true;$('#shot').hidden=true};$('#cut').onclick=()=>{let n=Math.min(can.width,can.height)*$('#size').value/100,l=(can.width-n)/2,t=(can.height-n)/2,p=$('#previews');p.innerHTML='';for(let r=0;r<3;r++)for(let c=0;c<3;c++){let e=document.createElement('canvas');e.width=e.height=96;e.getContext('2d').drawImage(can,l+c*n/3,t+r*n/3,n/3,n/3,0,0,96,96);p.append(e)}}})();
+(() => {
+  'use strict';
+  function createImageCropper({ stage, image, overlay, details }) {
+    let crop = { x: 0, y: 0, size: 0 };
+    let pointer = null;
+    function geo() {
+      if (!image.naturalWidth) return null;
+      const stageRect = stage.getBoundingClientRect();
+      const imageRect = image.getBoundingClientRect();
+      return { stageRect, imageX: imageRect.left - stageRect.left, imageY: imageRect.top - stageRect.top, imageWidth: imageRect.width, imageHeight: imageRect.height, scaleX: image.naturalWidth / imageRect.width, scaleY: image.naturalHeight / imageRect.height };
+    }
+    function clamp() {
+      const g = geo();
+      if (!g) return;
+      crop.size = Math.max(48, Math.min(crop.size, Math.min(g.imageWidth, g.imageHeight)));
+      crop.x = Math.max(g.imageX, Math.min(crop.x, g.imageX + g.imageWidth - crop.size));
+      crop.y = Math.max(g.imageY, Math.min(crop.y, g.imageY + g.imageHeight - crop.size));
+    }
+    function render() {
+      const g = geo();
+      if (!g) return;
+      clamp();
+      overlay.style.left = `${crop.x}px`;
+      overlay.style.top = `${crop.y}px`;
+      overlay.style.width = `${crop.size}px`;
+      overlay.style.height = `${crop.size}px`;
+      if (details) details.textContent = `Raster: ${Math.round(crop.size)} × ${Math.round(crop.size)} px. Die Vorschau und der Zuschnitt verwenden exakt dieses Raster.`;
+    }
+    function reset() {
+      const g = geo();
+      if (!g) return;
+      crop.size = Math.min(g.imageWidth, g.imageHeight) * .78;
+      crop.x = g.imageX + (g.imageWidth - crop.size) / 2;
+      crop.y = g.imageY + (g.imageHeight - crop.size) / 2;
+      render();
+    }
+    function point(event) {
+      const g = geo();
+      if (!g) return null;
+      return { x: event.clientX - g.stageRect.left, y: event.clientY - g.stageRect.top };
+    }
+    function down(event) {
+      const p = point(event);
+      if (!p) return;
+      pointer = { id: event.pointerId, handle: event.target.dataset.handle || '', x: p.x, y: p.y, cropX: crop.x, cropY: crop.y, cropSize: crop.size };
+      overlay.classList.add('dragging');
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    }
+    function move(event) {
+      if (!pointer || event.pointerId !== pointer.id) return;
+      const p = point(event);
+      if (!p) return;
+      const dx = p.x - pointer.x, dy = p.y - pointer.y;
+      if (!pointer.handle) { crop.x = pointer.cropX + dx; crop.y = pointer.cropY + dy; }
+      else {
+        const horizontal = pointer.handle.includes('w') ? -dx : dx;
+        const vertical = pointer.handle.includes('n') ? -dy : dy;
+        const delta = Math.abs(horizontal) > Math.abs(vertical) ? horizontal : vertical;
+        const size = pointer.cropSize + delta;
+        crop.x = pointer.handle.includes('w') ? pointer.cropX - (size - pointer.cropSize) : pointer.cropX;
+        crop.y = pointer.handle.includes('n') ? pointer.cropY - (size - pointer.cropSize) : pointer.cropY;
+        crop.size = size;
+      }
+      render();
+      event.preventDefault();
+    }
+    function up(event) {
+      if (!pointer || event.pointerId !== pointer.id) return;
+      pointer = null;
+      overlay.classList.remove('dragging');
+    }
+    function imageCrop() {
+      const g = geo();
+      if (!g) return null;
+      clamp();
+      const x = (crop.x - g.imageX) * g.scaleX;
+      const y = (crop.y - g.imageY) * g.scaleY;
+      return { x: Math.max(0, x), y: Math.max(0, y), width: Math.min(image.naturalWidth - x, crop.size * g.scaleX), height: Math.min(image.naturalHeight - y, crop.size * g.scaleY) };
+    }
+    function cutIntoNine(size = 240) {
+      const source = imageCrop();
+      if (!source) return [];
+      const result = [];
+      const tileWidth = source.width / 3, tileHeight = source.height / 3;
+      for (let row = 0; row < 3; row += 1) {
+        for (let col = 0; col < 3; col += 1) {
+          const canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          canvas.getContext('2d').drawImage(image, source.x + col * tileWidth, source.y + row * tileHeight, tileWidth, tileHeight, 0, 0, size, size);
+          result.push(canvas.toDataURL('image/jpeg', .92));
+        }
+      }
+      return result;
+    }
+    overlay.addEventListener('pointerdown', down);
+    stage.addEventListener('pointermove', move);
+    stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
+    window.addEventListener('resize', render);
+    return { reset, render, imageCrop, cutIntoNine };
+  }
+  window.ImageImport = { createImageCropper };
+})();
