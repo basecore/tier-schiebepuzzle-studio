@@ -1,7 +1,6 @@
 (() => {
   'use strict';
 
-  // Universelle Teile: T1-T8 für Tier/Teil 1-8, '.' für freies Feld
   const tiles = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', '.'];
   const rank = { T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8 };
   const neighbors = {
@@ -10,31 +9,18 @@
     6: [3, 7], 7: [4, 6, 8], 8: [5, 7]
   };
 
-  function key(state) {
-    return state.join(',');
-  }
+  function key(state) { return state.join(','); }
 
   function buildGoals() {
-    // 6 Permutationen der 3 Spalten × 2 Positionen des freien Felds = 12 Ziele
-    const perms = [
-      [0, 1, 2], [0, 2, 1], [1, 0, 2],
-      [1, 2, 0], [2, 0, 1], [2, 1, 0]
-    ];
+    const perms = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
     const all = [];
     for (const p of perms) {
       for (const blankTop of [true, false]) {
         const s = Array(9);
         const colA = p[0], colB = p[1], colC = p[2];
-        // Spalte A: T1, T2, T3
-        s[colA] = 'T1'; s[colA + 3] = 'T2'; s[colA + 6] = 'T3';
-        // Spalte B: T4, T5, T6
-        s[colB] = 'T4'; s[colB + 3] = 'T5'; s[colB + 6] = 'T6';
-        // Spalte C: T7, T8 + freies Feld
-        if (blankTop) {
-          s[colC] = '.'; s[colC + 3] = 'T7'; s[colC + 6] = 'T8';
-        } else {
-          s[colC] = 'T7'; s[colC + 3] = 'T8'; s[colC + 6] = '.';
-        }
+        s[colA] = 'T1'; s[colB] = 'T4'; s[colC] = blankTop ? '.' : 'T7';
+        s[colA+3] = 'T2'; s[colB+3] = 'T5'; s[colC+3] = blankTop ? 'T7' : 'T8';
+        s[colA+6] = 'T3'; s[colB+6] = 'T6'; s[colC+6] = blankTop ? 'T8' : '.';
         all.push(s);
       }
     }
@@ -45,8 +31,7 @@
   const goalKeys = new Set(goals.map(key));
 
   function valid(state) {
-    return Array.isArray(state) && state.length === 9 &&
-      tiles.every(t => state.filter(v => v === t).length === 1);
+    return Array.isArray(state) && state.length === 9 && tiles.every(t => state.filter(v => v === t).length === 1);
   }
 
   function inversions(state) {
@@ -60,9 +45,7 @@
     return inv;
   }
 
-  function isGoal(state) {
-    return goalKeys.has(key(state));
-  }
+  function isGoal(state) { return goalKeys.has(key(state)); }
 
   function direction(from, to) {
     const d = to - from;
@@ -78,8 +61,7 @@
     return neighbors[e].map(from => {
       const c = state.slice();
       const t = c[from];
-      c[e] = t;
-      c[from] = '.';
+      c[e] = t; c[from] = '.';
       return { tile: t, from, to: e, ...direction(from, e), state: c };
     });
   }
@@ -109,9 +91,7 @@
     }
     if (!end) return { status: 'Unlösbar', path: [] };
     const path = [];
-    for (let a = end; par.get(a); a = par.get(a).prev) {
-      path.push(par.get(a).move);
-    }
+    for (let a = end; par.get(a); a = par.get(a).prev) path.push(par.get(a).move);
     path.reverse();
     return { status: 'Lösbar', path };
   }
@@ -129,25 +109,10 @@
         [s[e], s[f]] = [s[f], s[e]];
       }
       const r = solve(s);
-      if (r.status === 'Lösbar' && r.path.length >= min && r.path.length <= max) {
-        return s;
-      }
+      if (r.status === 'Lösbar' && r.path.length >= min && r.path.length <= max) return s;
     }
     return ['T1', 'T6', 'T4', 'T2', 'T7', 'T5', 'T3', 'T8', '.'];
   }
 
-  window.Engine = {
-    tiles,
-    goal: goals[0].slice(),
-    goals: goals.map(g => g.slice()),
-    neighbors,
-    key,
-    valid,
-    inversions,
-    isGoal,
-    next,
-    possible,
-    solve,
-    random
-  };
+  window.Engine = { tiles, goal: goals[0].slice(), goals: goals.map(g => g.slice()), neighbors, key, valid, inversions, isGoal, next, possible, solve, random };
 })();
